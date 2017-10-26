@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>h5control - DEMO</title>
+<link rel="stylesheet" type="text/css" href="css/h5control_test.css">
+<script type="text/javascript" src="../h5control.js"></script>
+<script type="text/javascript">
+
+	var myUnit = new DeviceUnit();
+	var motor1 = new Motor();
+	var motor2 = new Motor();
+	var player1 = new TonePlayer();
+
+	window.onload = function() {
+		h5control.setup();
+	};
+
+	h5control.whenConnect = function() {
+		h5control.resetAll();
+	};
+
+	h5control.whenUnitReady = function(unitId) {
+
+		if (unitId==1) {
+
+			myUnit.setup(unitId);
+
+			motor1.setup(unitId, 5, 4, MotorMode.PWM_DIR);
+			motor2.setup(unitId, 6, 7, MotorMode.PWM_DIR);
+			player1.setup(unitId, 8);
+			song();
+			document.getElementById("status").innerHTML = "system ready";
+		}
+	};
+
+	motor1.whenSetPower = function(power) {
+		document.getElementById("status").innerHTML = "present motor A power is set to " + Math.round(power/0xff*100) + "%";
+	};
+
+	motor1.whenGetPower = function(power) {
+		alert("present motor A power is " + Math.round(power/0xff*100) + "% .");
+	};
+
+	motor2.whenSetPower = function(power) {
+		document.getElementById("status").innerHTML = "present motor B power is set to " + Math.round(power/0xff*100) + "%";
+	};
+
+	motor2.whenGetPower = function(power) {
+		alert("present motor B power is " + Math.round(power/0xff*100) + "% .");
+	};
+
+	function song() {
+
+		myUnit.beginSync();
+
+		player1.play(MusicNote.G3, 100); myUnit.wait(50);
+		player1.play(MusicNote.E3, 100); myUnit.wait(50);
+		player1.play(MusicNote.E3, 250); myUnit.wait(50);
+
+		player1.play(MusicNote.F3, 100); myUnit.wait(50);
+		player1.play(MusicNote.D3, 100); myUnit.wait(50);
+		player1.play(MusicNote.D3, 250); myUnit.wait(50);
+
+		player1.play(MusicNote.C3, 100); myUnit.wait(50);
+		player1.play(MusicNote.D3, 100); myUnit.wait(50);
+		player1.play(MusicNote.E3, 100); myUnit.wait(50);
+		player1.play(MusicNote.F3, 100); myUnit.wait(50);
+
+		player1.play(MusicNote.G3, 100); myUnit.wait(50);
+		player1.play(MusicNote.G3, 100); myUnit.wait(50);
+		player1.play(MusicNote.G3, 250); myUnit.wait(50);
+		player1.stop();
+
+		myUnit.finishSync();
+	}
+
+	var timerAlert = null;
+	var alertState = 0;
+
+	function alertOn() {
+		if (timerAlert == null) {
+
+			alertState = 0;
+			player1.play(300);
+
+			timerAlert = setInterval(function() {
+				if (alertState==0) {
+					player1.play(400);
+					alertState = 1;
+				} else {
+					player1.play(300);
+					alertState = 0;
+				}
+			}, 1000);
+		}
+	}
+
+	function alertOff() {
+		if (timerAlert != null) {
+			player1.stop();
+			clearInterval(timerAlert);
+			timerAlert = null;
+		}
+	}
+
+	var speed = 127;
+	var status = "stop";
+
+	function turnLeft() {
+		myUnit.beginSync();
+		motor1.setPower(speed);
+		motor2.setPower(-speed);
+		myUnit.finishSync();
+		alertOn();
+		status="left";
+	}
+
+	function turnRight() {
+		myUnit.beginSync();
+		motor1.setPower(-speed);
+		motor2.setPower(speed);
+		myUnit.finishSync();
+		alertOn();
+		status="right";
+	}
+
+	function moveForward() {
+		myUnit.beginSync();
+		motor1.setPower(speed);
+		motor2.setPower(speed);
+		myUnit.finishSync();
+		alertOn();
+		status="forward";
+	}
+
+	function moveBackward() {
+		myUnit.beginSync();
+		motor1.setPower(-speed);
+		motor2.setPower(-speed);
+		myUnit.finishSync();
+		alertOn();
+		status="backward";
+	}
+
+	function stop() {
+		myUnit.beginSync();
+		motor1.setPower(0);
+		motor2.setPower(0);
+		myUnit.finishSync();
+		alertOff();
+		status="stop";
+	}
+
+	function setSpeed(newSpeed) {
+
+		speed = newSpeed;
+
+		if (status=="left")
+			turnLeft();
+		else if (status=="right")
+			turnRight();
+		else if (status=="forward")
+			moveForward();
+		else if (status=="backward")
+			moveBackward();
+	}
+
+</script>
+</head>
+
+<body>
+<h1>h5control demo</h1>
+
+<div id="status">starting...</div>
+
+<p>
+	MOTORS<br/>
+
+	<input type="button" value="Move Forward"  onclick="moveForward();" />
+	<input type="button" value="Move Backward" onclick="moveBackward();" />
+	<input type="button" value="Turn Left"     onclick="turnLeft();" />
+	<input type="button" value="Turn Right"    onclick="turnRight();" />
+	<input type="button" value="STOP"          onclick="stop();" />
+	<br/><br/>
+	<input type="button" value="Speed x1" onclick="setSpeed(127);" />
+	<input type="button" value="Speed x2" onclick="setSpeed(191);" />
+	<input type="button" value="Speed x3" onclick="setSpeed(255);" />
+</p>
+<p>
+	MOTOR A: <br/>
+	<input type="button" value="-100%"
+		   onclick="motor1.setPower(-255);" />
+	<input type="button" value="-75%"
+		   onclick="motor1.setPower(-191);" />
+	<input type="button" value="-50%"
+		   onclick="motor1.setPower(-127);" />
+	<input type="button" value="stop"
+		   onclick="motor1.setPower(0);" />
+	<input type="button" value="+50%"
+		   onclick="motor1.setPower(127);" />
+	<input type="button" value="+75%"
+		   onclick="motor1.setPower(191);" />
+	<input type="button" value="+100%"
+		   onclick="motor1.setPower(255);" />
+	<br/><br/>
+	<input type="button" value="present motor power ?"
+		   onclick="motor1.getPower();" />
+</p>
+<p>
+	MOTOR B: <br/>
+	<input type="button" value="-100%"
+		   onclick="motor2.setPower(-255);" />
+	<input type="button" value="-75%"
+		   onclick="motor2.setPower(-191);" />
+	<input type="button" value="-50%"
+		   onclick="motor2.setPower(-127);" />
+	<input type="button" value="stop"
+		   onclick="motor2.setPower(0);" />
+	<input type="button" value="+50%"
+		   onclick="motor2.setPower(127);" />
+	<input type="button" value="+75%"
+		   onclick="motor2.setPower(191);" />
+	<input type="button" value="+100%"
+		   onclick="motor2.setPower(255);" />
+	<br/><br/>
+	<input type="button" value="present motor power ?"
+		   onclick="motor2.getPower();" />
+</p>
+<p>
+	ALERT: <br/>
+	<input type="button" value="Alert ON"
+		   onclick="alertOn();" />
+	<input type="button" value="Alert OFF"
+		   onclick="alertOff();" />
+	<input type="button" value="Play Song"
+		   onclick="song();" />
+</p>
+</body>
+</html>
